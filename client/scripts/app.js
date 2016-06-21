@@ -41,7 +41,11 @@ $(document).ready(function () {
 	var friendsList = {};
 	var roomsList = {};
 
-	// ----------------- INITIAL OPTIONS FOR GET -------------------------
+	// ------------------------ INITIALIZATION --------------------------
+	message.username = prompt("Please enter your username");
+
+	console.log(message.username);
+
 	var $GET = {
 		url: 'https://api.parse.com/1/classes/messages',
 		type: 'GET',
@@ -303,6 +307,7 @@ $(document).ready(function () {
 		});
 		$('#createrooms').val('');
 	});
+
 
 });
 
