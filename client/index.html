@@ -15,7 +15,24 @@
   <body>
     <div id="main">
       <h1>chatterbox</h1>
+      Friends
+      <select class="friendsMenu">
+        <option value="AllFriends">All Friends</option>
+      </select>
+      Rooms
+      <select class="chatRooms">
+        <option value="AllRooms">All Rooms</option>
+      </select>
+      <form id="roomcreate">
+        <input type="text" id="createrooms" name=roomcreation>
+        <input type="button" id="createRoom" value="Create Room">
+      </form>
       <!-- Your HTML goes here! -->
+      <form id="typePost">
+        Tell everyone your thoughts!
+        <input type="text" id="postmessage" name="postmessage">
+        <input type="button" id="submitButton" value="Submit">
+      </form>
     </div>
     <div id="chats"></div>
   </body>
