@@ -1,5 +1,71 @@
 // YOUR CODE HERE:
 
+$(document).ready(function () {
+
+	var newestID;
+	var dataArray = [];
+	var $GET = {
+		url: 'https://api.parse.com/1/classes/messages',
+		type: 'GET',
+		data: JSON.stringify(message),
+		contentType: 'application/json',
+		success: function (data) {
+			console.log(data);
+			console.log('chatterbox: Message received');
+		/* Format of data: 
+		Object { results: Array with 100 indexes }
+		Each array [has an object {
+		username: 'string',
+		text: 'string',
+		roomname: 'string'
+		}]
+		*/
+			dataArray = data.results;
+			dataArray.forEach(function printToScreen (item, index) {
+				if (item.text) {
+					if (index === 0) {
+						newestID = item.objectId;
+					}
+					$('#chats').append('<p>' + removeTags(item.text) + '</p>');
+				}
+			});
+		},
+		error: function (data) {
+			console.error('chatterbox: Failed to receive message', data);
+		}
+	};
+
+	$.ajax($GET);
+
+	setInterval(function displayPosts () {
+		var somevariable = $GET;
+		$GET.success = function(data) {
+			dataArray = data.results;
+			console.log(dataArray[0].text);
+			for (var x = 0, found = false; x < dataArray.length && !found; x++) {
+
+				if (dataArray[x].text) {
+					if (dataArray[x].objectId !== newestID) {
+						$('.posts').prepend('<p class="posts">' + removeTags(dataArray[x].text) + '</p>');
+						$('.posts').last().remove();
+					} else {
+						found = true;
+					}
+				}
+
+			}
+			newestID = dataArray.objectId;
+			console.log('chatterbox: Message received');
+		}
+		$.ajax($GET);
+	}, 5000);
+
+});
+
+
+
+
+
 // Example from Bookstrap: 
 var message = {
   username: 'no one',
