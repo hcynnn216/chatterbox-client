@@ -4,6 +4,7 @@ $(document).ready(function () {
 
 	var newestID;
 	var dataArray = [];
+	var friendsList = {};
 	var $GET = {
 		url: 'https://api.parse.com/1/classes/messages',
 		type: 'GET',
@@ -26,7 +27,10 @@ $(document).ready(function () {
 					if (index === 0) {
 						newestID = item.objectId;
 					}
-					$('#chats').append('<p>' + removeTags(item.text) + '</p>');
+					var $myPost = $('<div class="posts"></div>');
+					$myPost.append('<p class="username">' + removeTags(item.username ? item.username : 'Anonymous') + '</p>');
+					$myPost.append('<p class="messages">' + removeTags(item.text) + '</p>');
+					$('#chats').append($myPost);
 				}
 			});
 		},
@@ -41,12 +45,15 @@ $(document).ready(function () {
 		var somevariable = $GET;
 		$GET.success = function(data) {
 			dataArray = data.results;
-			console.log(dataArray[0].text);
+			// console.log(dataArray[0].text);
 			for (var x = 0, found = false; x < dataArray.length && !found; x++) {
 
 				if (dataArray[x].text) {
 					if (dataArray[x].objectId !== newestID) {
-						$('.posts').prepend('<p class="posts">' + removeTags(dataArray[x].text) + '</p>');
+						var $myPost = $('<div class="posts"></div>');
+						$myPost.append('<p class="username">' + removeTags(dataArray[x].username ? dataArray[x].username : 'Anonymous') + '</p>');
+						$myPost.append('<p class="messages">' + removeTags(dataArray[x].text) + '</p>');
+						$('#chats').prepend($myPost);
 						$('.posts').last().remove();
 					} else {
 						found = true;
@@ -60,11 +67,12 @@ $(document).ready(function () {
 		$.ajax($GET);
 	}, 5000);
 
+	$('#chats').on('click', '.username', function () {
+		friendsList[$(this).text()] = true;
+		console.log(friendsList);
+	});
+
 });
-
-
-
-
 
 // Example from Bookstrap: 
 var message = {
@@ -88,32 +96,6 @@ $.ajax({
   }
 });
 
-$.ajax({
-  url: 'https://api.parse.com/1/classes/messages',
-  type: 'GET',
-  data: JSON.stringify(message),
-  contentType: 'application/json',
-  success: function (data) {
-  	console.log(data);
-    console.log('chatterbox: Message received');
-    /* Format of data: 
-    Object { results: Array with 100 indexes }
-    Each array [has an object {
-		username: 'string',
-		text: 'string',
-		roomname: 'string'
-    }]
-    */
-    data.results.forEach(function printToScreen (item) {
-      if (item.text) {
-        $('#chats').append('<p>' + removeTags(item.text) + '</p>');
-      }
-    });
-  },
-  error: function (data) {
-    console.error('chatterbox: Failed to receive message', data);
-  }
-});
 
 // Set of functions to remove tags from input
 var tagBody = '(?:[^"\'>]|"[^"]*"|\'[^\']*\')*';
@@ -144,5 +126,81 @@ function removeTags(html) {
 var $myHtml = '<p>Hello""<script>""<script>console.log("Do evil things");</script></p>';
 
 console.log(removeTags($myHtml));
+
+
+
+
+
+
+
+
+// var aPost = $('<div class="myPost"></div>');
+
+// aPost.text(message);
+// aPost.html(username class="username");
+
+
+// $(body).prepend(aPost);
+
+// $('.username').on('click', function () {
+// 	displays/filters the text we want
+// })
+
+// var friendList = {
+// 	Hong: true
+// };
+
+// when the user clicks on a username --> function () {
+// 	friendList[username] = true; 
+// }
+
+// Hong
+
+// is a friend? if (friendList[data.username] === true) {
+// 	is a friend, 
+// }
+
+
+
+
+
+
+
+// -----------------
+// Hong
+// Hello guys! 
+// -----------------
+
+// when someone clicks on hong .on(click function () {
+// 	add Hong to our friendsList
+// 	friendsList.Hong = true;
+// })
+
+//      Format of data: 
+//     Object { results: Array with 100 indexes }
+//     Each array [has an object {
+// 		username: 'string',
+// 		text: 'string',
+// 		roomname: 'string'
+//     }]
+
+// data node in the array:
+// username: Charlie
+// text: Hello guys!
+// roomname: HR44
+
+// search for username in our friendsList
+
+// if (friendslist.hong === true) {
+// 	function (make message bold);
+// }
+
+
+
+
+
+
+
+
 
 
