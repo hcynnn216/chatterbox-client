@@ -1,103 +1,12 @@
-// YOUR CODE HERE:
+// ----------------------- GLOBAL VARIABLES ----------------------------
 
-$(document).ready(function () {
-
-	var newestID;
-	var dataArray = [];
-	var friendsList = {};
-	var $GET = {
-		url: 'https://api.parse.com/1/classes/messages',
-		type: 'GET',
-		data: JSON.stringify(message),
-		contentType: 'application/json',
-		success: function (data) {
-			console.log(data);
-			console.log('chatterbox: Message received');
-		/* Format of data: 
-		Object { results: Array with 100 indexes }
-		Each array [has an object {
-		username: 'string',
-		text: 'string',
-		roomname: 'string'
-		}]
-		*/
-			dataArray = data.results;
-			dataArray.forEach(function printToScreen (item, index) {
-				if (item.text) {
-					if (index === 0) {
-						newestID = item.objectId;
-					}
-					var $myPost = $('<div class="posts"></div>');
-					$myPost.append('<p class="username">' + removeTags(item.username ? item.username : 'Anonymous') + '</p>');
-					$myPost.append('<p class="messages">' + removeTags(item.text) + '</p>');
-					$('#chats').append($myPost);
-				}
-			});
-		},
-		error: function (data) {
-			console.error('chatterbox: Failed to receive message', data);
-		}
-	};
-
-	$.ajax($GET);
-
-	setInterval(function displayPosts () {
-		var somevariable = $GET;
-		$GET.success = function(data) {
-			dataArray = data.results;
-			// console.log(dataArray[0].text);
-			for (var x = 0, found = false; x < dataArray.length && !found; x++) {
-
-				if (dataArray[x].text) {
-					if (dataArray[x].objectId !== newestID) {
-						var $myPost = $('<div class="posts"></div>');
-						$myPost.append('<p class="username">' + removeTags(dataArray[x].username ? dataArray[x].username : 'Anonymous') + '</p>');
-						$myPost.append('<p class="messages">' + removeTags(dataArray[x].text) + '</p>');
-						$('#chats').prepend($myPost);
-						$('.posts').last().remove();
-					} else {
-						found = true;
-					}
-				}
-
-			}
-			newestID = dataArray.objectId;
-			console.log('chatterbox: Message received');
-		}
-		$.ajax($GET);
-	}, 5000);
-
-	$('#chats').on('click', '.username', function () {
-		friendsList[$(this).text()] = true;
-		console.log(friendsList);
-	});
-
-});
-
-// Example from Bookstrap: 
 var message = {
   username: 'no one',
   text: 'I"m hack proof now!',  
   roomname: '4chan'
 };
 
-$.ajax({
-  // This is the url you should use to communicate with the parse API server.
-  url: 'https://api.parse.com/1/classes/messages',
-  type: 'POST',
-  data: JSON.stringify(message),
-  contentType: 'application/json',
-  success: function (data) {
-    console.log('chatterbox: Message sent');
-  },
-  error: function (data) {
-    // See: https://developer.mozilla.org/en-US/docs/Web/API/console.error
-    console.error('chatterbox: Failed to send message', data);
-  }
-});
-
-
-// Set of functions to remove tags from input
+// ------------------ XSS PREVENTION - TAG REMOVERS ----------------------
 var tagBody = '(?:[^"\'>]|"[^"]*"|\'[^\']*\')*';
 
 var tagOrComment = new RegExp(
@@ -123,77 +32,279 @@ function removeTags(html) {
   return html.replace(/</g, '&lt;');
 }
 
-var $myHtml = '<p>Hello""<script>""<script>console.log("Do evil things");</script></p>';
+$(document).ready(function () {
 
-console.log(removeTags($myHtml));
+	// ----------------- ALMOST GLOBAL VARIABLES -------------------------
 
+	var newestID;
+	var dataArray = [];
+	var friendsList = {};
+	var roomsList = {};
 
+	// ----------------- INITIAL OPTIONS FOR GET -------------------------
+	var $GET = {
+		url: 'https://api.parse.com/1/classes/messages',
+		type: 'GET',
+		data: JSON.stringify(message),
+		contentType: 'application/json',
+		success: function (data) {
+			console.log('chatterbox: Message received');
+		/* Format of data: 
+		Object { results: Array with 100 indexes }
+		Each array [has an object {
+		username: 'string',
+		text: 'string',
+		roomname: 'string'
+		}]
+		*/
+			dataArray = data.results;
+			dataArray.forEach(function printToScreen (item, index) {
+				if (item.text) {
+					if (index === 0) {
+						newestID = item.objectId;
+					}
+					var $myPost = $('<div class="posts"></div>');
+					$myPost.append('<p class="username">' + removeTags(item.username ? item.username : 'Anonymous') + '</p>');
+					$myPost.append('<p class="messages">' + removeTags(item.text) + '</p>');
+					$('#chats').append($myPost);
+					if (item.roomname && !roomsList[item.roomname]) {
+						var myRoom = item.roomname
+						roomsList[myRoom] = true;
+						$('.chatRooms').append('<option value="' + myRoom + '">' + myRoom + '</option>');
+					}
+				}
+			});
+		},
+		error: function (data) {
+			console.error('chatterbox: Failed to receive message', data);
+		}
+	};
 
+	$.ajax($GET);
 
+	var basicUpdate = {};
+	for (var key in $GET) {
+		basicUpdate[key] = $GET[key];
+	}
+	$GET.success = function(data) {
+		dataArray = data.results;
+		// console.log(dataArray[0].text);
+		for (var x = 0, found = false; x < dataArray.length && !found; x++) {
 
+			if (dataArray[x].text) {
+				if (dataArray[x].objectId !== newestID) {
+					var $myPost = $('<div class="posts"></div>');
+					$myPost.append('<p class="username">' + removeTags(dataArray[x].username ? dataArray[x].username : 'Anonymous') + '</p>');
+					$myPost.append('<p class="messages">' + removeTags(dataArray[x].text) + '</p>');
+					if (dataArray[x].username && friendsList[dataArray[x].username]) {
+						$myPost.addClass('friend');
+					}
+					$('#chats').prepend($myPost);
+					$('.posts').last().remove();
+					if (dataArray[x].roomname && !roomsList[dataArray[x].roomname]) {
+						var myRoom = dataArray[x].roomname
+						roomsList[myRoom] = true;
+						$('.chatRooms').append('<option value="' + myRoom + '">' + myRoom + '</option>');
+					}
+				} else {
+					found = true;
+				}
+			}
 
+		}
+		newestID = dataArray.objectId;
+		console.log('chatterbox: Message received');
+	}
 
+	// ------------------- CONTINUOUS UPDATE LOOP ----------------------------
 
-// var aPost = $('<div class="myPost"></div>');
+	setInterval(function displayPosts () {
+		$.ajax($GET);
+	}, 5000);
 
-// aPost.text(message);
-// aPost.html(username class="username");
+	$('#chats').on('click', '.username', function () {
+		var friendName = $(this).text();
+		if (!friendsList[friendName]) {
+			if (friendName !== 'Anonymous') {
+				friendsList[friendName] = true;
+			}
+			$('.friendsMenu').append('<option value="' + friendName + '">' + friendName + '</option>');
+		}
+	});
 
+	// ------------------- FILTER FOR FRIENDS --------------------------------
 
-// $(body).prepend(aPost);
+	$('.friendsMenu').change(function filterFriends() {
 
-// $('.username').on('click', function () {
-// 	displays/filters the text we want
-// })
+		var someusername = $(this).val();
 
-// var friendList = {
-// 	Hong: true
-// };
+		if (someusername === 'AllFriends') {
+			for (var key in basicUpdate) {
+				$GET[key] = basicUpdate[key];
+			}
+			$('#chats').empty();
+			dataArray.forEach(function checkName(item){
+				var $myPost = $('<div class="posts"></div>');
+				$myPost.append('<p class="username">' + removeTags(item.username ? item.username : 'Anonymous') + '</p>');
+				$myPost.append('<p class="messages">' + removeTags(item.text) + '</p>');
+				if (item.username && friendsList[item.username]) {
+					$myPost.addClass('friend');
+				}
+				$('#chats').append($myPost);
+			});
+		} else {
 
-// when the user clicks on a username --> function () {
-// 	friendList[username] = true; 
-// }
+			$GET.success = function(data) {
+				newestID = dataArray[0].objectId;
+				dataArray = data.results.filter(function filterForFriend(item){
+					return item.username === someusername;
+				});
+				// console.log(dataArray[0].text);
+				for (var x = 0, found = false; x < dataArray.length && !found; x++) {
 
-// Hong
+					if (dataArray[x].text) {
+						if (dataArray[x].objectId !== newestID) {
+							var $myPost = $('<div class="posts"></div>');
+							$myPost.append('<p class="username">' + removeTags(dataArray[x].username ? dataArray[x].username : 'Anonymous') + '</p>');
+							$myPost.append('<p class="messages">' + removeTags(dataArray[x].text) + '</p>');
+							if (dataArray[x].username && friendsList[dataArray[x].username]) {
+								$myPost.addClass('friend');
+							}
+							$('#chats').prepend($myPost);
+							$('.posts').last().remove();
+							if (dataArray[x].roomname && !roomsList[dataArray[x].roomname]) {
+								var myRoom = dataArray[x].roomname
+								roomsList[myRoom] = true;
+								$('.chatRooms').append('<option value="' + myRoom + '">' + myRoom + '</option>');
+							}
+						} else {
+							found = true;
+						}
+					}
 
-// is a friend? if (friendList[data.username] === true) {
-// 	is a friend, 
-// }
+				}
+				newestID = dataArray[0].objectId;
+				console.log('chatterbox: Message received');
+			}
 
+			$('#chats').empty();
+			dataArray.forEach(function checkName(item){
+				if (item.username && item.username === someusername) {
+					var $myPost = $('<div class="posts friend"></div>');
+					$myPost.append('<p class="username">' + removeTags(item.username ? item.username : 'Anonymous') + '</p>');
+					$myPost.append('<p class="messages">' + removeTags(item.text) + '</p>');
+					$('#chats').append($myPost);
+				}
+			});
+		}
+	});
 
+	// ------------------------ FILTER FOR ROOMS ------------------------
 
+	$('.chatRooms').change(function filterRooms() {
 
+		var someroomname = $(this).val();
 
+		if (someroomname === 'AllRooms') {
+			message.roomname = '';
+			for (var key in basicUpdate) {
+				$GET[key] = basicUpdate[key];
+			}
+			$('#chats').empty();
+			dataArray.forEach(function checkName(item){
+				var $myPost = $('<div class="posts"></div>');
+				$myPost.append('<p class="username">' + removeTags(item.username ? item.username : 'Anonymous') + '</p>');
+				$myPost.append('<p class="messages">' + removeTags(item.text) + '</p>');
+				if (item.username && friendsList[item.username]) {
+					$myPost.addClass('friend');
+				}
+				$('#chats').append($myPost);
+			});
+		} else {
+			message.roomname = someroomname;
+			$GET.success = function(data) {
+				newestID = dataArray[0].objectId;
+				dataArray = data.results.filter(function filterForRoom(item){
+					return item.roomname === someroomname;
+				});
+				// console.log(dataArray[0].text);
+				for (var x = 0, found = false; x < dataArray.length && !found; x++) {
 
+					if (dataArray[x].text) {
+						if (dataArray[x].objectId !== newestID) {
+							var $myPost = $('<div class="posts"></div>');
+							$myPost.append('<p class="username">' + removeTags(dataArray[x].username ? dataArray[x].username : 'Anonymous') + '</p>');
+							$myPost.append('<p class="messages">' + removeTags(dataArray[x].text) + '</p>');
+							if (dataArray[x].username && friendsList[dataArray[x].username]) {
+								$myPost.addClass('friend');
+							}
+							$('#chats').prepend($myPost);
+							$('.posts').last().remove();
+						} else {
+							found = true;
+						}
+					}
 
-// -----------------
-// Hong
-// Hello guys! 
-// -----------------
+				}
+				newestID = dataArray[0].objectId;
+				console.log('chatterbox: Message received');
+			}
 
-// when someone clicks on hong .on(click function () {
-// 	add Hong to our friendsList
-// 	friendsList.Hong = true;
-// })
+			$('#chats').empty();
+			dataArray.forEach(function checkName(item){
+				if (item.roomname && item.roomname === someroomname) {
+					var $myPost = $('<div class="posts friend"></div>');
+					$myPost.append('<p class="username">' + removeTags(item.username ? item.username : 'Anonymous') + '</p>');
+					$myPost.append('<p class="messages">' + removeTags(item.text) + '</p>');
+					$('#chats').append($myPost);
+				}
+			});
+		}
+	});
 
-//      Format of data: 
-//     Object { results: Array with 100 indexes }
-//     Each array [has an object {
-// 		username: 'string',
-// 		text: 'string',
-// 		roomname: 'string'
-//     }]
+	$('#submitButton').on('click', function submitPost(){
+		message.text = $('#postmessage').val();
+		$.ajax({
+		  // This is the url you should use to communicate with the parse API server.
+		  url: 'https://api.parse.com/1/classes/messages',
+		  type: 'POST',
+		  data: JSON.stringify(message),
+		  contentType: 'application/json',
+		  success: function (data) {
+		    console.log('chatterbox: Message sent');
+		  },
+		  error: function (data) {
+		    // See: https://developer.mozilla.org/en-US/docs/Web/API/console.error
+		    console.error('chatterbox: Failed to send message', data);
+		  }
+		});
+		$('#postmessage').val('');
+	});
 
-// data node in the array:
-// username: Charlie
-// text: Hello guys!
-// roomname: HR44
+	$('#createRoom').on('click', function createRoom() {
+		var myRoom = $('#createrooms').val();
+		roomsList[myRoom] = true;
+		message.text = message.username + 'created a room named ' + myRoom + '!';
+		message.roomname = myRoom;
+		$('.chatRooms').append('<option value="' + myRoom + '">' + myRoom + '</option>');
+		$.ajax({
+		  // This is the url you should use to communicate with the parse API server.
+		  url: 'https://api.parse.com/1/classes/messages',
+		  type: 'POST',
+		  data: JSON.stringify(message),
+		  contentType: 'application/json',
+		  success: function (data) {
+		    console.log('chatterbox: Message sent');
+		  },
+		  error: function (data) {
+		    // See: https://developer.mozilla.org/en-US/docs/Web/API/console.error
+		    console.error('chatterbox: Failed to send message', data);
+		  }
+		});
+		$('#createrooms').val('');
+	});
 
-// search for username in our friendsList
-
-// if (friendslist.hong === true) {
-// 	function (make message bold);
-// }
+});
 
 
 
