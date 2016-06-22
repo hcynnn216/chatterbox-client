@@ -308,8 +308,84 @@ $(document).ready(function () {
 		$('#createrooms').val('');
 	});
 
+	$('.createTab').on('click', function(){
+		var currentRoom = $('.chatRooms').val();
+		var roomTabs = $('.tab-links').children();
+		$('.active').removeClass('active');
+		var found = false;
+		roomTabs.each(function (index, node){
+			if ($(node).text() === currentRoom) {
+				
+				$(node).addClass('active');
+				found = true;
+			} 
+		});
+		if (!found) {
+			$('.tab-links').append('<li class="active tabbutton">' + currentRoom + '</li>');
+		}
+
+
+
+		$('#chats').empty();
+			dataArray.forEach(function checkName(item){
+				if (item.roomname && item.roomname === currentRoom) {
+					var $myPost = $('<div class="posts friend"></div>');
+					$myPost.append('<p class="username">' + removeTags(item.username ? item.username : 'Anonymous') + '</p>');
+					$myPost.append('<p class="messages">' + removeTags(item.text) + '</p>');
+					$('#chats').append($myPost);
+				}
+			});
+		
+		$.ajax($GET);
+});
+		
+		
+	$('.tab-links').on('click', '.tabbutton', function(){
+			$('.active').removeClass('active');
+			$(this).addClass('active');
+			var currentRoom = $('.active').text();
+			console.log(currentRoom);
+			$('#chats').empty();
+			dataArray.forEach(function checkName(item){
+				if (item.roomname && item.roomname === currentRoom) {
+					var $myPost = $('<div class="posts friend"></div>');
+					$myPost.append('<p class="username">' + removeTags(item.username ? item.username : 'Anonymous') + '</p>');
+					$myPost.append('<p class="messages">' + removeTags(item.text) + '</p>');
+					$('#chats').append($myPost);
+				}
+			});
+			$GET.success = function(data) {
+				newestID = dataArray[0].objectId;
+				dataArray = data.results.filter(function filterForRoom(item){
+					return item.roomname === currentRoom;
+				});
+				// console.log(dataArray[0].text);
+				for (var x = 0, found = false; x < dataArray.length && !found; x++) {
+
+					if (dataArray[x].text) {
+						if (dataArray[x].objectId !== newestID) {
+							var $myPost = $('<div class="posts"></div>');
+							$myPost.append('<p class="username">' + removeTags(dataArray[x].username ? dataArray[x].username : 'Anonymous') + '</p>');
+							$myPost.append('<p class="messages">' + removeTags(dataArray[x].text) + '</p>');
+							if (dataArray[x].username && friendsList[dataArray[x].username]) {
+								$myPost.addClass('friend');
+							}
+							$('#chats').prepend($myPost);
+							$('.posts').last().remove();
+						} else {
+							found = true;
+						}
+					}
+
+				}
+				newestID = dataArray[0].objectId;
+				console.log('chatterbox: Message received');
+			}
+
+	});
 
 });
+
 
 
 

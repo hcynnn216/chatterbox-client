@@ -23,6 +23,8 @@
       <select class="chatRooms">
         <option value="AllRooms">All Rooms</option>
       </select>
+      <button class="createTab">Create Tab</button>
+
       <form id="roomcreate">
         <input type="text" id="createrooms" name=roomcreation>
         <input type="button" id="createRoom" value="Create Room">
@@ -34,6 +36,16 @@
         <input type="button" id="submitButton" value="Submit">
       </form>
     </div>
+    <div class="tabs">
+      <ul class="tab-links">
+          <li class="active"><a href="#tab1">Tab #1</a></li>
+      </ul>
+      <div class="tab-content">
+        <div id="tab1" class="tab active">
+            
+        </div>
+      </div>
+    </div>  
     <div id="chats"></div>
   </body>
 </html>
